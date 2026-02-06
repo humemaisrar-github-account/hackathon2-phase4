@@ -1,3 +1,10 @@
+<!--
+New technology added to project:
+- FastAPI (backend framework)
+- SQLModel (ORM)
+- Neon Serverless PostgreSQL (database)
+-->
+
 # Claude Code Rules
 
 This file is generated during init for the selected agent.
@@ -91,7 +98,7 @@ After completing requests, you **MUST** create a PHR (Prompt History Record).
 
 7) Post‑creation validations (must pass)
    - No unresolved placeholders (e.g., `{{THIS}}`, `[THAT]`).
-   - Title, stage, and dates match front‑matter.
+   - Title, stage, and dates match front-matter.
    - PROMPT_TEXT is complete (not truncated).
    - File exists at the expected path and is readable.
    - Path matches route.
@@ -113,7 +120,7 @@ You are not expected to solve every problem autonomously. You MUST invoke the us
 1.  **Ambiguous Requirements:** When user intent is unclear, ask 2-3 targeted clarifying questions before proceeding.
 2.  **Unforeseen Dependencies:** When discovering dependencies not mentioned in the spec, surface them and ask for prioritization.
 3.  **Architectural Uncertainty:** When multiple valid approaches exist with significant tradeoffs, present options and get user's preference.
-4.  **Completion Checkpoint:** After completing major milestones, summarize what was done and confirm next steps. 
+4.  **Completion Checkpoint:** After completing major milestones, summarize what was done and confirm next steps.
 
 ## Default policies (must follow)
 - Clarify and plan first - keep business understanding separate from technical plan and carefully architect and implement.
@@ -208,3 +215,53 @@ Wait for consent; never auto-create ADRs. Group related decisions (stacks, authe
 
 ## Code Standards
 See `.specify/memory/constitution.md` for code quality, testing, performance, security, and architecture principles.
+
+## Specialized Agent Guidelines
+
+For this Phase II Todo Full-Stack Web Application project, use the following specialized agents based on the task type:
+
+### Auth Agent (`auth-agent`)
+Use for all authentication-related tasks:
+- User signup/signin implementation
+- Better Auth configuration and integration
+- JWT token generation and validation
+- Session management
+- Password hashing and verification
+- OAuth integration (if needed)
+
+### Frontend Agent (`frontend-nextjs-generator`)
+Use for all frontend development tasks:
+- Next.js 16+ pages, layouts, and components
+- App Router routing setup
+- Responsive UI implementation
+- Frontend API integration
+- Form creation and validation
+- State management in UI components
+
+### Database Agent (`neon-postgresql-operator`)
+Use for all database-related tasks:
+- PostgreSQL schema design
+- SQLModel model definitions
+- Database migrations
+- Query optimization
+- Neon Serverless PostgreSQL configuration
+- Connection pooling setup
+
+### Backend Agent (`fastapi-backend-developer`)
+Use for all backend API tasks:
+- FastAPI endpoint creation
+- RESTful API design and implementation
+- API authentication middleware
+- Request/response validation
+- Business logic implementation
+- API performance optimization
+
+## Technology Stack Reference
+
+| Layer | Technology | When to Use |
+|-------|------------|-------------|
+| Frontend | Next.js 16+ (App Router) | Frontend Agent |
+| Backend | Python FastAPI | Backend Agent |
+| ORM | SQLModel | Database Agent |
+| Database | Neon Serverless PostgreSQL | Database Agent |
+| Authentication | Better Auth (JWT) | Auth Agent |

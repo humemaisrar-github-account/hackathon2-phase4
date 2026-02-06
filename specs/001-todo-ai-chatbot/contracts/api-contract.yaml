@@ -1,0 +1,334 @@
+# API Contract: Todo AI Chatbot
+
+**Feature**: Todo AI Chatbot with Gemini AI and MCP Server
+**Version**: 1.0.0
+**Date**: 2026-02-06
+
+## Overview
+
+This document defines the API contract for the AI-powered todo chatbot system. The API enables natural language interaction with todo management functionality through a conversational interface.
+
+## Base URL
+
+```
+https://api.yourdomain.com/api
+```
+
+In development:
+```
+http://localhost:8000/api
+```
+
+## Authentication
+
+All endpoints require authentication via JWT token in the Authorization header:
+
+```
+Authorization: Bearer {jwt_token}
+```
+
+The user_id is extracted from the JWT token claims and used for data isolation.
+
+## API Endpoints
+
+### 1. Chat Endpoint
+
+**Endpoint**: `POST /{user_id}/chat`
+
+**Description**: Send a message to the AI chatbot and receive a response with potential todo operations performed.
+
+**Headers**:
+```
+Content-Type: application/json
+Authorization: Bearer {jwt_token}
+```
+
+**Path Parameters**:
+- `user_id` (string, required): The ID of the user making the request
+
+**Request Body**:
+```json
+{
+  "conversation_id": 123,
+  "message": "Add a task to buy groceries"
+}
+```
+
+**Request Body Properties**:
+- `conversation_id` (integer, optional): Existing conversation ID; if not provided, a new conversation is created
+- `message` (string, required): The user's natural language message
+
+**Success Response (200 OK)**:
+```json
+{
+  "conversation_id": 123,
+  "response": "I've added the task 'buy groceries' to your list. You now have 3 pending tasks.",
+  "tool_calls": [
+    {
+      "tool_name": "add_task",
+      "result": {
+        "task_id": 456,
+        "status": "created",
+        "title": "buy groceries"
+      }
+    }
+  ]
+}
+```
+
+**Response Properties**:
+- `conversation_id` (integer): The ID of the conversation (newly created or existing)
+- `response` (string): The AI-generated response to the user
+- `tool_calls` (array): List of MCP tools called and their results
+
+**Error Responses**:
+- `400 Bad Request`: Invalid request format
+- `401 Unauthorized`: Invalid or missing JWT token
+- `403 Forbidden`: User attempting to access another user's data
+- `422 Unprocessable Entity`: Semantic validation errors
+- `500 Internal Server Error`: Server-side errors
+
+### 2. MCP Tools API Contract
+
+The following tools are exposed through the MCP server for AI agent usage:
+
+#### Tool: add_task
+**Purpose**: Create a new task
+**Parameters**:
+- `user_id` (string, required)
+- `title` (string, required)
+- `description` (string, optional)
+
+**Returns**:
+- `task_id` (integer)
+- `status` (string)
+- `title` (string)
+
+**Example Input**:
+```json
+{
+  "user_id": "user123",
+  "title": "Buy groceries",
+  "description": "Milk, eggs, bread"
+}
+```
+
+**Example Output**:
+```json
+{
+  "task_id": 5,
+  "status": "created",
+  "title": "Buy groceries"
+}
+```
+
+#### Tool: list_tasks
+**Purpose**: Retrieve tasks from the list
+**Parameters**:
+- `user_id` (string, required)
+- `status` (string, optional): "all", "pending", "completed" (defaults to "all")
+
+**Returns**:
+- Array of task objects with id, title, completed status
+
+**Example Input**:
+```json
+{
+  "user_id": "user123",
+  "status": "pending"
+}
+```
+
+**Example Output**:
+```json
+[
+  {
+    "id": 1,
+    "title": "Buy groceries",
+    "completed": false
+  },
+  {
+    "id": 2,
+    "title": "Call mom",
+    "completed": false
+  }
+]
+```
+
+#### Tool: complete_task
+**Purpose**: Mark a task as complete
+**Parameters**:
+- `user_id` (string, required)
+- `task_id` (integer, required)
+
+**Returns**:
+- `task_id` (integer)
+- `status` (string)
+- `title` (string)
+
+**Example Input**:
+```json
+{
+  "user_id": "user123",
+  "task_id": 3
+}
+```
+
+**Example Output**:
+```json
+{
+  "task_id": 3,
+  "status": "completed",
+  "title": "Call mom"
+}
+```
+
+#### Tool: delete_task
+**Purpose**: Remove a task from the list
+**Parameters**:
+- `user_id` (string, required)
+- `task_id` (integer, required)
+
+**Returns**:
+- `task_id` (integer)
+- `status` (string)
+- `title` (string)
+
+**Example Input**:
+```json
+{
+  "user_id": "user123",
+  "task_id": 2
+}
+```
+
+**Example Output**:
+```json
+{
+  "task_id": 2,
+  "status": "deleted",
+  "title": "Old task"
+}
+```
+
+#### Tool: update_task
+**Purpose**: Modify task title or description
+**Parameters**:
+- `user_id` (string, required)
+- `task_id` (integer, required)
+- `title` (string, optional)
+- `description` (string, optional)
+
+**Returns**:
+- `task_id` (integer)
+- `status` (string)
+- `title` (string)
+
+**Example Input**:
+```json
+{
+  "user_id": "user123",
+  "task_id": 1,
+  "title": "Buy groceries and fruits"
+}
+```
+
+**Example Output**:
+```json
+{
+  "task_id": 1,
+  "status": "updated",
+  "title": "Buy groceries and fruits"
+}
+```
+
+### 3. Conversation Management Endpoints
+
+**Endpoint**: `GET /{user_id}/conversations`
+
+**Description**: Retrieve a list of user's conversations.
+
+**Headers**:
+```
+Content-Type: application/json
+Authorization: Bearer {jwt_token}
+```
+
+**Path Parameters**:
+- `user_id` (string, required): The ID of the user making the request
+
+**Success Response (200 OK)**:
+```json
+{
+  "conversations": [
+    {
+      "id": 123,
+      "created_at": "2023-10-01T10:00:00Z",
+      "updated_at": "2023-10-01T10:15:00Z"
+    },
+    {
+      "id": 124,
+      "created_at": "2023-10-02T09:30:00Z",
+      "updated_at": "2023-10-02T09:45:00Z"
+    }
+  ]
+}
+```
+
+**Endpoint**: `GET /{user_id}/conversations/{conversation_id}/messages`
+
+**Description**: Retrieve messages from a specific conversation.
+
+**Headers**:
+```
+Content-Type: application/json
+Authorization: Bearer {jwt_token}
+```
+
+**Path Parameters**:
+- `user_id` (string, required): The ID of the user making the request
+- `conversation_id` (integer, required): The ID of the conversation
+
+**Success Response (200 OK)**:
+```json
+{
+  "messages": [
+    {
+      "id": 1001,
+      "role": "user",
+      "content": "Add a task to buy groceries",
+      "created_at": "2023-10-01T10:00:00Z"
+    },
+    {
+      "id": 1002,
+      "role": "assistant",
+      "content": "I've added the task 'buy groceries' to your list.",
+      "created_at": "2023-10-01T10:00:01Z"
+    }
+  ]
+}
+```
+
+## Error Response Format
+
+All error responses follow this structure:
+
+```json
+{
+  "detail": "Human-readable error message"
+}
+```
+
+## Rate Limiting
+
+Rate limits are applied per user:
+- 100 requests per minute per user
+- 1000 messages per conversation
+- Exceeding limits results in 429 Too Many Requests response
+
+## CORS Policy
+
+CORS is configured to allow:
+- Origins: Frontend domains
+- Methods: GET, POST, PUT, DELETE
+- Headers: Content-Type, Authorization

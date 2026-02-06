@@ -3,6 +3,7 @@ from sqlalchemy import engine
 from typing import Generator
 import os
 from dotenv import load_dotenv
+from src.database.tables import *
 
 # Load environment variables
 load_dotenv()
