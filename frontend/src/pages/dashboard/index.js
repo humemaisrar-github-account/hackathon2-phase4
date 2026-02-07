@@ -24,6 +24,31 @@ export default function Dashboard() {
     // after successful authentication with BetterAuth
   }, [user]);
 
+  // Listen for task updates from the chatbot
+  useEffect(() => {
+    const handleTaskUpdate = () => {
+      loadTodos();
+    };
+
+    const handleForceRefresh = () => {
+      loadTodos();
+    };
+
+    window.addEventListener('taskUpdated', handleTaskUpdate);
+    window.addEventListener('forceDashboardRefresh', handleForceRefresh);
+    
+    // Also set up a global function for direct calls
+    window.updateDashboard = loadTodos;
+
+    // Cleanup event listeners on component unmount
+    return () => {
+      window.removeEventListener('taskUpdated', handleTaskUpdate);
+      window.removeEventListener('forceDashboardRefresh', handleForceRefresh);
+      // Remove the global function when component unmounts
+      delete window.updateDashboard;
+    };
+  }, [user]);
+
   const loadTodos = async () => {
     try {
       setLoading(true);

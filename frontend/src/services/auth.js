@@ -138,23 +138,47 @@ class AuthService {
 
               // First, try to get JWT token from backend using email
               try {
-                const backendTokenResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000'}/api/auth/token`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    email: userData.email,
-                  }),
-                });
+                // Retry mechanism to handle potential timing issues
+                let retryCount = 0;
+                let tokenSuccess = false;
+                
+                while (retryCount < 3 && !tokenSuccess) {
+                  try {
+                    const backendTokenResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000'}/api/auth/token`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                      },
+                      body: JSON.stringify({
+                        email: userData.email,
+                      }),
+                    });
 
-                if (backendTokenResponse.ok) {
-                  const backendResult = await backendTokenResponse.json();
-                  if (backendResult.access_token) {
-                    // Set the JWT token for API requests
-                    const { setAuthToken } = await import('./api');
-                    setAuthToken(backendResult.access_token);
+                    if (backendTokenResponse.ok) {
+                      const backendResult = await backendTokenResponse.json();
+                      if (backendResult.access_token) {
+                        // Set the JWT token for API requests
+                        const { setAuthToken } = await import('./api');
+                        setAuthToken(backendResult.access_token);
+                        tokenSuccess = true;
+                      }
+                    } else {
+                      console.error(`Attempt ${retryCount + 1}: Failed to get JWT token from backend after registration:`, await backendTokenResponse.text());
+                    }
+                  } catch (backendError) {
+                    console.error(`Attempt ${retryCount + 1} error getting JWT token after registration:`, backendError);
                   }
+                  
+                  if (!tokenSuccess && retryCount < 2) {
+                    // Wait before retrying (with increasing delay)
+                    await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 300));
+                  }
+                  
+                  retryCount++;
+                }
+                
+                if (!tokenSuccess) {
+                  console.error('Failed to get JWT token after registration after 3 attempts');
                 }
               } catch (backendError) {
                 console.error('Backend token request after registration failed:', backendError);
@@ -235,23 +259,51 @@ class AuthService {
       this.notifyListeners(this.currentUser);
 
       // Get JWT token from the backend authentication system using email
-      const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000'}/api/auth/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: credentials.email,
-        }),
-      });
+      try {
+        // Retry mechanism to handle potential timing issues
+        let retryCount = 0;
+        let tokenSuccess = false;
+        
+        while (retryCount < 3 && !tokenSuccess) {
+          try {
+            const backendResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://127.0.0.1:8000'}/api/auth/token`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: credentials.email,
+              }),
+            });
 
-      if (backendResponse.ok) {
-        const backendResult = await backendResponse.json();
-        if (backendResult.access_token) {
-          // Set the JWT token for API requests
-          const { setAuthToken } = await import('./api');
-          setAuthToken(backendResult.access_token);
+            if (backendResponse.ok) {
+              const backendResult = await backendResponse.json();
+              if (backendResult.access_token) {
+                // Set the JWT token for API requests
+                const { setAuthToken } = await import('./api');
+                setAuthToken(backendResult.access_token);
+                tokenSuccess = true;
+              }
+            } else {
+              console.error(`Attempt ${retryCount + 1}: Failed to get JWT token from backend:`, await backendResponse.text());
+            }
+          } catch (tokenError) {
+            console.error(`Attempt ${retryCount + 1} error getting JWT token:`, tokenError);
+          }
+          
+          if (!tokenSuccess && retryCount < 2) {
+            // Wait before retrying (with increasing delay)
+            await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 300));
+          }
+          
+          retryCount++;
         }
+        
+        if (!tokenSuccess) {
+          console.error('Failed to get JWT token after 3 attempts');
+        }
+      } catch (tokenError) {
+        console.error('Error getting JWT token from backend:', tokenError);
       }
 
       return betterAuthResult;

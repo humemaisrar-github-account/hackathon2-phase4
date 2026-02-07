@@ -17,15 +17,15 @@ def chat_with_ai(
 ) -> Dict[str, Any]:
     """
     Main chat endpoint for interacting with the AI assistant.
-    
+
     Args:
         user_id: ID of the user chatting with the AI
         request: Request containing the user's message
         session: Database session
         current_user: Authenticated user
-        
+
     Returns:
-        Dictionary with AI's response
+        Dictionary with structured response data
     """
     # Verify the authenticated user matches the requested user_id
     current_user_id_str = str(current_user.id)
@@ -35,7 +35,7 @@ def chat_with_ai(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied: Cannot access another user's chat"
         )
-    
+
     # Get the user's message from the request
     user_message = request.get("message", "")
     if not user_message:
@@ -43,25 +43,32 @@ def chat_with_ai(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Message is required"
         )
-    
+
     try:
         # Create the AI chat service
         ai_service = AIChatService()
-        
+
         # Process the natural language command
-        response = ai_service.process_natural_language_todo_command(
+        response = ai_service.process_natural_language_todo_command_with_metadata(
             user_input=user_message,
             user=current_user,
             session=session
         )
-        
+
         return {
-            "response": response,
-            "user_id": user_id_str,
-            "success": True
+            "success": True,
+            "action": response.get("action", "general"),
+            "message": response.get("message", "Operation completed successfully"),
+            "task": response.get("task", None),
+            "operation_performed": response.get("operation_performed", False),
+            "response": response.get("ai_response", response.get("message", "Operation completed"))
         }
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing chat request: {str(e)}"
-        )
+        return {
+            "success": False,
+            "action": "error",
+            "message": f"Error: {str(e)}",
+            "task": None,
+            "operation_performed": False,
+            "response": f"I'm sorry, I encountered an error processing your request: {str(e)}"
+        }

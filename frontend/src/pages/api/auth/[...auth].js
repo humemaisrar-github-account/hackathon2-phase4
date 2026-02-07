@@ -1,8 +1,8 @@
-import { BetterAuth } from "better-auth";
+import { betterAuth } from "better-auth";
 import { nextJs } from "better-auth/next-js";
 
 // Initialize Better Auth with PostgreSQL configuration
-const auth = BetterAuth({
+const auth = betterAuth({
   database: {
     provider: "postgresql",
     url: process.env.DATABASE_URL || "postgresql://postgres:postgres@localhost:5432/todo_app",

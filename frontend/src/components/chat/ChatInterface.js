@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { chatAPI } from '../../services/api';
 
-const ChatInterface = ({ userId }) => {
+const ChatInterface = ({ userId, onTaskUpdate }) => {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -37,23 +37,60 @@ const ChatInterface = ({ userId }) => {
     try {
       // Send message to the backend
       const response = await chatAPI.sendMessage(userId, userMessage);
-      
+
+      // Log the response for debugging
+      console.log('Chat response:', response);
+
       // Add AI response to the chat
       const aiMessage = {
         id: Date.now() + 1,
-        text: response.response,
+        text: response.response || response.message,
         sender: 'ai',
         timestamp: new Date().toISOString()
       };
 
       setMessages(prev => [...prev, aiMessage]);
+
+      // Check if the response indicates an operation was performed
+      if (response.operation_performed && response.action !== 'general' && response.action !== 'error') {
+        // Trigger dashboard refresh to show updated tasks immediately
+        // Use multiple approaches to ensure dashboard updates
+        
+        // Method 1: Direct callback if available (most reliable)
+        if (onTaskUpdate) {
+          setTimeout(() => {
+            onTaskUpdate();
+          }, 100); // Minimal delay to ensure DB operations complete
+        }
+        
+        // Method 2: Direct window function call
+        setTimeout(() => {
+          if (window.updateDashboard && typeof window.updateDashboard === 'function') {
+            window.updateDashboard();
+          }
+        }, 150);
+        
+        // Method 3: Custom event dispatching
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('taskUpdated', { 
+            detail: response,
+            bubbles: true,
+            cancelable: true
+          }));
+        }, 200);
+        
+        // Method 4: Force a global refresh signal
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('forceDashboardRefresh'));
+        }, 250);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
 
       // Add error message to the chat
       const errorMessage = {
         id: Date.now() + 1,
-        text: 'Sorry, I encountered an error processing your request. Please try again.',
+        text: error.response?.data?.detail || error.response?.data?.message || 'Sorry, I encountered an error processing your request. Please try again.',
         sender: 'ai',
         timestamp: new Date().toISOString()
       };
@@ -65,15 +102,9 @@ const ChatInterface = ({ userId }) => {
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow">
-      {/* Chat header */}
-      <div className="bg-blue-600 text-white p-4 rounded-t-lg">
-        <h2 className="text-xl font-semibold">AI Todo Assistant</h2>
-        <p className="text-sm opacity-80">Ask me to manage your todos!</p>
-      </div>
-
+    <div className="flex flex-col h-full bg-white">
       {/* Messages container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[400px]">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 flex-grow">
         {messages.length === 0 ? (
           <div className="text-center text-gray-500 py-8">
             <p>Hello! I'm your AI Todo Assistant.</p>
