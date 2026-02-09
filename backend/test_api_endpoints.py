@@ -124,9 +124,8 @@ def test_api_endpoints():
                 print("✓ PATCH /api/{user_id}/tasks/{id}/complete successful")
             elif patch_response.status_code == 403:
                 print("✗ PATCH /api/{user_id}/tasks/{id}/complete failed with 403 - user ID mismatch")
-                print(f"Response: {patch_response.text}")
-            else:
-                print(f"✗ Unexpected response: {patch_response.status_code} - {patch_response.text}")
+                print(f"Response: {post_response.text}")
+
 
         # Test DELETE /api/{user_id}/tasks/{id} with proper authentication
         if 'todo_id' in locals():
