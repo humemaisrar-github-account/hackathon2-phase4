@@ -25,7 +25,7 @@ This is a full-stack ToDo application designed to demonstrate modern web develop
 
 Follow these steps to get the project up and running on your local machine.
 
-### Prerequisites
+### Prerequisites (Local Development)
 
 Before you begin, ensure you have the following installed:
 
@@ -84,7 +84,7 @@ NEXT_PUBLIC_API_URL="http://localhost:8000" # Or wherever your backend is runnin
 ```
 *   Ensure `NEXT_PUBLIC_API_URL` points to your running backend API.
 
-## How to Run the Application
+## How to Run the Application (Local Development)
 
 Once both the backend and frontend are set up, you can start them independently.
 
@@ -107,6 +107,103 @@ The frontend application will be accessible at `http://localhost:3000` (or anoth
 
 Open your web browser and navigate to `http://localhost:3000` to access the ToDo application.
 
+## Kubernetes Deployment (Minikube)
+
+This section guides you through deploying the ToDo application to a local Kubernetes cluster using Minikube and Helm.
+
+### Prerequisites (Kubernetes Deployment)
+
+Before you begin, ensure you have the following installed:
+
+*   **Minikube:** A tool that runs a single-node Kubernetes cluster locally.
+*   **Helm:** The package manager for Kubernetes.
+
+### 1. Start Minikube
+
+Ensure your Minikube cluster is running:
+```bash
+minikube start
+```
+
+### 2. Build Docker Images
+
+Navigate to the `backend` and `frontend` directories and build their respective Docker images. Make sure to use the tags `todo-backend:latest` and `todo-frontend:latest` as these are configured in the Helm chart.
+
+**Build Backend Image:**
+```bash
+cd backend
+docker build -t todo-backend:latest .
+cd ..
+```
+
+**Build Frontend Image:**
+```bash
+cd frontend
+docker build -t todo-frontend:latest .
+cd ..
+```
+
+### 3. Load Images into Minikube
+
+Load the built Docker images into the Minikube Docker daemon so they are accessible by the cluster:
+
+```bash
+minikube image load todo-frontend:latest todo-backend:latest
+```
+
+### 4. Deploy with Helm
+
+Navigate to the `todoflow-chatbot` directory (where your `Chart.yaml` and `values.yaml` are located) and install or upgrade the Helm chart.
+
+**Initial Installation:**
+```bash
+helm install todoflow-chatbot ./todoflow-chatbot
+```
+
+**Upgrade Existing Deployment (after changes to chart or images):**
+```bash
+helm upgrade todoflow-chatbot ./todoflow-chatbot
+```
+
+### 5. Check Deployment Status
+
+Verify that the Kubernetes pods and services are running:
+
+**Check Pods:**
+```bash
+kubectl get pods
+```
+You should see `todoflow-chatbot-frontend-...` and `todoflow-chatbot-backend-...` pods in a `Running` status.
+
+**Check Services:**
+```bash
+kubectl get services
+```
+You should see `todoflow-chatbot-frontend` and `todoflow-chatbot-backend` services.
+
+**Check Ingress:**
+```bash
+kubectl get ingress
+```
+You should see an ingress resource named `todoflow-chatbot` with host `todoflow.local`.
+
+### 6. Access the Application
+
+To access your application, you need to configure your local machine to resolve `todoflow.local` to the IP address of your Minikube instance.
+
+1.  **Get Minikube IP:**
+    ```bash
+    minikube ip
+    ```
+2.  **Edit your hosts file:**
+    Add an entry like this to your hosts file (e.g., `/etc/hosts` on Linux/macOS, `C:\Windows\System32\drivers\etc\hosts` on Windows):
+    ```
+    <minikube-ip> todoflow.local
+    ```
+    Replace `<minikube-ip>` with the actual IP address you get from `minikube ip`.
+
+After updating your hosts file, you should be able to access your frontend application by navigating to `http://todoflow.local` in your web browser. The backend API will be available at `http://todoflow.local/api`.
+
 ## Project Structure Overview
 
 ```
@@ -128,7 +225,15 @@ hack-phase-3/
 │   │   └── styles/           # Global styles
 │   ├── package.json          # Node.js dependencies
 │   └── ...
-└── README.md                 # Project documentation
+├── todoflow-chatbot/         # Helm chart for Kubernetes deployment
+│   ├── Chart.yaml            # Defines the chart
+│   ├── values.yaml           # Default values for the chart
+│   └── templates/            # Kubernetes resource templates
+│       ├── deployment.yaml
+│       ├── service.yaml
+│       └── ingress.yaml
+├── README.md                 # Project documentation
+└── ...
 ```
 
 ## Testing
