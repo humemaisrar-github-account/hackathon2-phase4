@@ -42,12 +42,15 @@ const ChatInterface = ({ userId, onTaskUpdate }) => {
       console.log('Chat response:', response);
 
       // Add AI response to the chat
-      const aiMessage = {
-        id: Date.now() + 1,
-        text: response.response || response.message,
-        sender: 'ai',
-        timestamp: new Date().toISOString()
-      };
+      const aiText = response.response || response.message || 'Done.';
+
+const aiMessage = {
+  id: Date.now() + 1,
+  text: `${aiText}\n\n Please refresh the dashboard to see updates.`,
+  sender: 'ai',
+  timestamp: new Date().toISOString()
+};
+
 
       setMessages(prev => [...prev, aiMessage]);
 
